@@ -63,6 +63,17 @@
     abre uma interface pro prisma para visualizar
 
 
+    ```
+        {
+
+            "statusCode": 500,
+            "code": "P2021",
+            "error": "Internal Server Error",
+            "message": "\nInvalid `prisma.vote.findUnique()` invocation in\nc:\\Users\\PC\\Desktop\\nlw-expert\\src\\http\\routes\\vote-on-poll.ts:24:56\n\n 21 let { sessionId } = request.cookies;\n 22 \n 23 if (sessionId) {\n→ 24 const userPreviousVoteOnPoll = await prisma.vote.findUnique(\nThe table `public.Vote` does not exist in the current database."
+        }
+
+    ``` -> </> npx prisma db push
+
 
     https://hoppscotch.io/ - requisição pra api pelo navegador
     como ele está usando pelo endereço dns deles, não vai conseguir acessar o localhost
@@ -74,3 +85,17 @@
 
     biblioteca de validação de dados
     </> npm i zod
+
+# Radis
+
+    </> npm i ioredis
+
+# Webbsocket
+
+    Pub/Sub - Publish
+        É um evento com efeito colateral. É um pattern onde eu publico mensagens em uma lista e dividdo essas mensagens em canais, categorizar as mensages
+        Todas as mensagens que forem postadas nop canal com Id 1, só os que estiverem assinados no canal 1 vão ouvir as mensagens
+
+        Por isso que é muito utilizado quando se precisa categorizar os eventos (chat de conversa)
+
+

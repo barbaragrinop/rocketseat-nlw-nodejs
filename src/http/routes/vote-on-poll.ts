@@ -3,6 +3,8 @@ import { FastifyInstance } from "fastify";
 
 import { randomUUID } from "node:crypto";
 import { prisma } from "../../lib/prisma";
+import { redis } from "../../lib/redis";
+import { votingPubSub } from "../utils/voting-pub-sub";
 
 export async function voteOnPoll(app: FastifyInstance) {
   app.post("/polls/:pollId/votes", async (request, reply) => {
@@ -40,6 +42,16 @@ export async function voteOnPoll(app: FastifyInstance) {
             id: userPreviousVoteOnPoll.id,
           },
         });
+
+        //reduz a pontuação antiga
+        const score = await redis.zincrby(pollId, -1, userPreviousVoteOnPoll.pollOptionId);
+
+
+        votingPubSub.publish(pollId, {
+          pollOptionId: userPreviousVoteOnPoll.pollOptionId,
+          votes: Number(score),
+        })
+
       } else if (userPreviousVoteOnPoll) {
         return reply.status(401).send({
           message: "User already voted on this poll",
@@ -49,22 +61,29 @@ export async function voteOnPoll(app: FastifyInstance) {
 
     if (!sessionId) {
       sessionId = randomUUID();
+
       reply.setCookie("sessionId", sessionId, {
         path: "/",
-        maxAge: 60 * 60 * 24 * 30, //30 days
-        signed: true, //para assinar o cookie
-        httpOnly: true, //pra não ser acessado pelo javascript
-        // secure: true, //só vai ser enviado se a requisição for feita por https
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+        signed: true,
+        httpOnly: true,
       });
     }
 
     await prisma.vote.create({
       data: {
-        pollOptionId,
         sessionId,
         pollId,
+        pollOptionId,
       },
     });
+
+    const score = await redis.zincrby(pollId, 1, pollOptionId);
+
+    votingPubSub.publish(pollId, {
+      pollOptionId,
+      votes: Number(score),
+    })
 
     return reply.status(201).send();
   });
